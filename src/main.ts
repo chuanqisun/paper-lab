@@ -25,18 +25,8 @@ intent$
   .subscribe(state$);
 
 const App = () => html`
-  <h3>Upload</h3>
-  ${FileUploader(state$, intent$)}
-  ${state$.pipe(
-    map((s) =>
-      s.activeFile
-        ? html`
-            <h3>Markdown</h3>
-            ${MarkdownEditor(state$)}
-          `
-        : null,
-    ),
-  )}
+  <h2>Paper Lab</h2>
+  ${FileUploader(state$, intent$)} ${state$.pipe(map((s) => (s.activeFile ? html` ${MarkdownEditor(state$)} ` : null)))}
 `;
 
 // Bind to DOM

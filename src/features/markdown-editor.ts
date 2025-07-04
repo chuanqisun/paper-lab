@@ -31,13 +31,9 @@ export function MarkdownEditor(state$: BehaviorSubject<State>) {
       const file = state$.value.activeFile;
       if (!file) throw new Error("No active file to process");
       const dataUrl = await fileToDataUrl(file);
-      const responseStream = await openai.responses.create(
+      const responseStream = await openai.responses.stream(
         {
           input: [
-            {
-              role: "developer",
-              content: document.querySelector<CodeEditorElement>("#promptEditor")!.value,
-            },
             {
               role: "user",
               content: [
@@ -48,9 +44,13 @@ export function MarkdownEditor(state$: BehaviorSubject<State>) {
                 },
               ],
             },
+            {
+              role: "user",
+              content: document.querySelector<CodeEditorElement>("#promptEditor")!.value,
+            },
           ],
+          user: "paper-lab",
           model: "gpt-4.1-mini",
-          stream: true,
         },
         {
           signal: abortController$.value!.signal,
@@ -68,6 +68,8 @@ export function MarkdownEditor(state$: BehaviorSubject<State>) {
       );
 
       await lastValueFrom(genStream$);
+      const finalUsage = (await responseStream.finalResponse()).usage;
+      console.log("Final usage:", finalUsage);
     } finally {
       cursor.close();
       abortController$.next(null);
