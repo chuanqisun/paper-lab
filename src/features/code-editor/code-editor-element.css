@@ -1,0 +1,36 @@
+code-editor-element {
+  display: grid;
+  flex-grow: 1;
+  color-scheme: dark;
+
+  &[data-readonly] .cm-editor {
+    outline: 2px solid currentColor;
+    outline-offset: -2px;
+  }
+}
+
+.cm-editor {
+  height: 100%;
+  min-height: 32px;
+  max-height: var(--max-height);
+  overflow: auto;
+
+  padding: 0; /* cm line comes with padding */
+  border: 1px solid currentColor;
+  border-radius: 2px;
+
+  &.cm-focused {
+    outline: none;
+  }
+
+  .cm-line {
+    line-height: 18px;
+  }
+
+  .cm-line:first-of-type {
+    margin-top: 3px;
+  }
+  .cm-line:last-of-type {
+    margin-bottom: 3px;
+  }
+}
