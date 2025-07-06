@@ -1,53 +1,35 @@
-import { distinctUntilChanged, map, Observable, Subject } from "rxjs";
-import { html } from "../lib/html";
-import type { Intent, State } from "../types";
+import { command$ } from "../main";
+import type { Command, State } from "../types";
 
-export function activeFileReducer(state: State, intent: Intent): State {
+export function pickFileEffect(command: Command) {
+  if (!command.pickFile) return;
+  uploadSingleFile();
+}
+
+export function uploadFilesReducer(state: State, intent: Command): State {
   if (intent.clearUpload) {
     return {
       ...state,
-      activeFile: undefined,
+      files: [],
     };
-  } else if (intent.uploadFile) {
+  } else if (intent.uploadFiles) {
     return {
       ...state,
-      activeFile: intent.uploadFile,
+      files: [...state.files, ...intent.uploadFiles],
     };
   } else return state;
 }
 
-export function FileUploader(state$: Observable<State>, intent$: Subject<Intent>) {
-  const currentFileInfo$ = state$.pipe(
-    map((s) => s.activeFile),
-    distinctUntilChanged(),
-    map((file) => {
-      return file
-        ? html`
-            <span>${file.name} ${file.size}</span>
-            <button @click=${() => intent$.next({ clearUpload: true })}>Clear</button>
-          `
-        : null;
-    }),
-  );
-
-  const uploadSingleFile = () => {
-    const input = document.createElement("input");
-    input.type = "file";
-    input.accept = ".pdf";
-    input.onchange = () => {
-      if (input.files) {
-        for (const file of input.files) {
-          intent$.next({ uploadFile: file });
-        }
-      }
-      input.remove();
-    };
-    input.click();
+const uploadSingleFile = () => {
+  const input = document.createElement("input");
+  input.type = "file";
+  input.accept = ".pdf";
+  input.multiple = true;
+  input.onchange = () => {
+    if (input.files) {
+      command$.next({ uploadFiles: [...input.files] });
+    }
+    input.remove();
   };
-
-  return html`
-    <button @click=${uploadSingleFile}>Upload PDF</button>
-      <div>${currentFileInfo$}</div>
-    </button>
-  `;
-}
+  input.click();
+};

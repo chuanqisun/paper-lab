@@ -16,7 +16,6 @@ code-editor-element {
   overflow: auto;
 
   padding: 0; /* cm line comes with padding */
-  border: 1px solid currentColor;
   border-radius: 2px;
 
   &.cm-focused {
