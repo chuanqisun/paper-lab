@@ -1,8 +1,11 @@
+html {
+  height: 100%;
+}
+
 body {
   font-family: monospace;
-  max-width: 600px;
-  margin: 0 auto;
-  padding: 1rem;
+  margin: 0;
+  height: 100%;
 }
 
 h1,
@@ -13,4 +16,12 @@ h5,
 h6,
 p {
   margin-block: 1ch;
+}
+
+.app-layout {
+  display: grid;
+  grid-template:
+    "header header" auto
+    "sidebar input" var(--input-height)
+    "sidebar output" 1fr / var(--sidebar-width) 2fr;
 }
