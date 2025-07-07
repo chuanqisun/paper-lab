@@ -17,6 +17,7 @@
     "@codemirror/commands": "^6.8.1",
     "@codemirror/lang-markdown": "^6.3.3",
     "@codemirror/language": "^6.11.2",
+    "@codemirror/language-data": "^6.5.1",
     "@codemirror/state": "^6.5.2",
     "@codemirror/view": "^6.38.0",
     "cm6-theme-basic-light": "^0.2.0",

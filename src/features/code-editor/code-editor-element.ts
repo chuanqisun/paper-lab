@@ -1,6 +1,7 @@
-import { defaultKeymap, history, historyKeymap } from "@codemirror/commands";
+import { defaultKeymap, history, historyKeymap, indentWithTab } from "@codemirror/commands";
 import { markdown } from "@codemirror/lang-markdown";
 import { defaultHighlightStyle, syntaxHighlighting } from "@codemirror/language";
+import { languages } from "@codemirror/language-data";
 import { Compartment, EditorSelection, EditorState, type Extension } from "@codemirror/state";
 import { drawSelection, EditorView, highlightSpecialChars, keymap } from "@codemirror/view";
 import { basicLight } from "cm6-theme-basic-light";
@@ -8,6 +9,7 @@ import { distinctUntilChanged, Subject, tap } from "rxjs";
 import "./code-editor-element.css";
 import { syncDispatch } from "./sync";
 
+const dynamicLanguage = new Compartment();
 const dynamicReadonly = new Compartment();
 
 export class CodeEditorElement extends HTMLElement {
@@ -16,7 +18,7 @@ export class CodeEditorElement extends HTMLElement {
     customElements.define("code-editor-element", CodeEditorElement);
   }
 
-  static observedAttributes = ["data-value", "data-readonly"];
+  static observedAttributes = ["data-lang", "data-value", "data-readonly"];
 
   private editorView: EditorView | null = null;
   private cursorViews: EditorView[] = [];
@@ -28,10 +30,10 @@ export class CodeEditorElement extends HTMLElement {
     drawSelection(),
     syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
     EditorView.lineWrapping,
-    keymap.of([...defaultKeymap, ...historyKeymap]),
-    basicLight,
+    keymap.of([...defaultKeymap, ...historyKeymap, indentWithTab]),
     dynamicReadonly.of([]),
-    markdown(),
+    dynamicLanguage.of([]),
+    basicLight,
     EditorView.focusChangeEffect.of((state, focusing) => {
       if (focusing) return null;
       this.change$.next(state.doc.toString());
@@ -45,6 +47,8 @@ export class CodeEditorElement extends HTMLElement {
       dispatch: (tr) => syncDispatch(tr, this.editorView!, this.cursorViews),
       parent: this,
     });
+
+    this.updateLanguage(this.getAttribute("data-lang") ?? "md");
 
     if (this.hasAttribute("data-value")) {
       // initial load, avoid setter.
@@ -70,6 +74,10 @@ export class CodeEditorElement extends HTMLElement {
   }
 
   attributeChangedCallback(name: string, _oldValue: string, newValue: string) {
+    if (name === "data-lang") {
+      this.updateLanguage(newValue);
+    }
+
     if (name === "data-value") {
       this.value = newValue;
     }
@@ -84,6 +92,13 @@ export class CodeEditorElement extends HTMLElement {
     const reconfig = dynamicReadonly.reconfigure(EditorState.readOnly.of(isReadonly)); // This keeps focusability while preventing edits
     // const reconfig = dynamicReadonly.reconfigure(EditorView.editable.of(!isReadonly)); // This prevent DOM focusability
     this.editorView?.dispatch({ effects: reconfig });
+  }
+
+  updateLanguage(lang: string) {
+    getLanguageSupport(lang).then((lang) => {
+      const reconfig = dynamicLanguage.reconfigure(lang);
+      this.editorView?.dispatch({ effects: reconfig });
+    });
   }
 
   set value(value: string) {
@@ -246,5 +261,19 @@ export class CodeEditorElement extends HTMLElement {
         select: newHead,
       });
     }
+  }
+}
+
+async function getLanguageSupport(filenameOrExtension: string) {
+  const ext = filenameOrExtension.split(".").pop();
+  switch (ext) {
+    case "md":
+      return markdown({ codeLanguages: languages });
+    default:
+      return (
+        (await languages
+          .find((lang) => lang.alias.includes(ext ?? "") || lang.extensions.includes(ext ?? ""))
+          ?.load()) ?? []
+      );
   }
 }
