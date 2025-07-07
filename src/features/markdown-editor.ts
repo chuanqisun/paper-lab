@@ -2,10 +2,10 @@ import OpenAI from "openai";
 import { BehaviorSubject, from, lastValueFrom, map, tap } from "rxjs";
 import { html } from "../lib/html";
 import { observe } from "../lib/observe";
-import type { Command, State } from "../types";
+import type { Intent, State } from "../types";
 import type { CodeEditorElement } from "./code-editor/code-editor-element";
 
-export function markdownEditorReducer(state: State, _intent: Command): State {
+export function markdownEditorReducer(state: State, _intent: Intent): State {
   return state;
 }
 
@@ -28,19 +28,21 @@ export function MarkdownEditor(state$: BehaviorSubject<State>) {
     try {
       abortController$.value?.abort(); // Cancel any previous request
       abortController$.next(new AbortController());
-      const files = state$.value.files ?? [];
-      if (!files) throw new Error("No active file to process");
-      const attachments = await Promise.all(files.map(async (f) => ({ name: f.name, url: await fileToDataUrl(f) })));
+      const file = state$.value.activeFile;
+      if (!file) throw new Error("No active file to process");
+      const dataUrl = await fileToDataUrl(file);
       const responseStream = await openai.responses.stream(
         {
           input: [
             {
               role: "user",
-              content: attachments.map((attachment) => ({
-                type: "input_file",
-                file_data: attachment.url,
-                filename: attachment.name,
-              })),
+              content: [
+                {
+                  type: "input_file",
+                  file_data: dataUrl,
+                  filename: file.name,
+                },
+              ],
             },
             {
               role: "user",

@@ -1,35 +1,53 @@
-import { command$ } from "../main";
-import type { Command, State } from "../types";
+import { distinctUntilChanged, map, Observable, Subject } from "rxjs";
+import { html } from "../lib/html";
+import type { Intent, State } from "../types";
 
-export function pickFileEffect(command: Command) {
-  if (!command.pickFile) return;
-  uploadSingleFile();
-}
-
-export function uploadFilesReducer(state: State, intent: Command): State {
+export function activeFileReducer(state: State, intent: Intent): State {
   if (intent.clearUpload) {
     return {
       ...state,
-      files: [],
+      activeFile: undefined,
     };
-  } else if (intent.uploadFiles) {
+  } else if (intent.uploadFile) {
     return {
       ...state,
-      files: [...state.files, ...intent.uploadFiles],
+      activeFile: intent.uploadFile,
     };
   } else return state;
 }
 
-const uploadSingleFile = () => {
-  const input = document.createElement("input");
-  input.type = "file";
-  input.accept = ".pdf";
-  input.multiple = true;
-  input.onchange = () => {
-    if (input.files) {
-      command$.next({ uploadFiles: [...input.files] });
-    }
-    input.remove();
+export function FileUploader(state$: Observable<State>, intent$: Subject<Intent>) {
+  const currentFileInfo$ = state$.pipe(
+    map((s) => s.activeFile),
+    distinctUntilChanged(),
+    map((file) => {
+      return file
+        ? html`
+            <span>${file.name} ${file.size}</span>
+            <button @click=${() => intent$.next({ clearUpload: true })}>Clear</button>
+          `
+        : null;
+    }),
+  );
+
+  const uploadSingleFile = () => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = ".pdf";
+    input.onchange = () => {
+      if (input.files) {
+        for (const file of input.files) {
+          intent$.next({ uploadFile: file });
+        }
+      }
+      input.remove();
+    };
+    input.click();
   };
-  input.click();
-};
+
+  return html`
+    <button @click=${uploadSingleFile}>Upload PDF</button>
+      <div>${currentFileInfo$}</div>
+    </button>
+  `;
+}

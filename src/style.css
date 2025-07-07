@@ -8,10 +8,6 @@ body {
   height: 100%;
 }
 
-* {
-  box-sizing: border-box;
-}
-
 h1,
 h2,
 h3,
@@ -24,30 +20,8 @@ p {
 
 .app-layout {
   display: grid;
-  gap: 1px;
-  background: #aaa;
   grid-template:
     "header header" auto
     "sidebar input" var(--input-height)
     "sidebar output" 1fr / var(--sidebar-width) 2fr;
-}
-
-.app-layout__header {
-  padding: 1ch;
-  grid-area: header;
-  background: #eee;
-}
-
-.app-layout__sidebar {
-  grid-area: sidebar;
-  background: #eee;
-}
-
-.app-layout__input {
-  grid-area: input;
-}
-
-.app-layout__output {
-  grid-area: output;
-  background: white;
 }

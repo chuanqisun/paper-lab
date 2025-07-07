@@ -1,16 +1,9 @@
 export interface State {
-  files: File[];
+  activeFile?: File;
   openaiApiKey: string;
 }
 
-export interface Command {
-  newFile?: true;
-  pickFile?: true;
-  uploadFiles?: File[];
+export type Intent = {
+  uploadFile?: File;
   clearUpload?: true;
-  run?: RunRequest;
-}
-
-export interface RunRequest {
-  code: string;
-}
+};
