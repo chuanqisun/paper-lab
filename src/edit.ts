@@ -1,3 +1,5 @@
+import * as esbuild from "esbuild-wasm";
+import esbuildWasmURL from "esbuild-wasm/esbuild.wasm?url";
 import { OpenAI } from "openai/client.js";
 import { finalize, from, fromEvent, merge, switchMap, tap } from "rxjs";
 import "./edit.css";
@@ -5,6 +7,16 @@ import { CodeEditorElement } from "./features/code-editor/code-editor-element";
 import { getStoredApiKey } from "./features/markdown-editor";
 
 CodeEditorElement.define();
+
+async function initEsbuild() {
+  await esbuild.initialize({
+    wasmURL: esbuildWasmURL,
+  });
+
+  return esbuild;
+}
+
+const esbuildAsync = initEsbuild();
 
 const sourceEditor = document.querySelector<CodeEditorElement>("#source-editor")!;
 const promptEditor = document.querySelector<CodeEditorElement>("#prompt-editor")!;
@@ -79,6 +91,26 @@ async function edit(content: string): string {
   }),
 );
 
-const scriptEditorRun$ = fromEvent(scriptEditor, "run").pipe(tap(() => {}));
+const scriptEditorRun$ = fromEvent<CustomEvent<string>>(scriptEditor, "run").pipe(
+  switchMap(async (e) => {
+    const code = e.detail;
+    const dom = new DOMParser().parseFromString(code, "text/html");
+    const script = dom.querySelector("script[type='text/typescript']")?.textContent ?? "";
+    const esbuild = await esbuildAsync;
+    const output = await esbuild
+      .transform(script, { loader: "ts" })
+      .then((r) => r.code)
+      .catch((error) => {
+        console.error("Error transforming script:", error);
+        return null;
+      });
+
+    if (!output) return;
+    const editFunction = new Function("content", output + " return edit(content);");
+    const content = sourceEditor.value;
+    const updatedContent = await editFunction(content);
+    sourceEditor.value = updatedContent;
+  }),
+);
 
 merge(sourceEditorRun$, promptEditorRun$, scriptEditorRun$).subscribe();

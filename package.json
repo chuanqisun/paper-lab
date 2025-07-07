@@ -21,6 +21,7 @@
     "@codemirror/state": "^6.5.2",
     "@codemirror/view": "^6.38.0",
     "cm6-theme-basic-light": "^0.2.0",
+    "esbuild-wasm": "^0.25.6",
     "lit-html": "^3.3.0",
     "openai": "^5.8.2",
     "rxjs": "^7.8.2"
