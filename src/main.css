@@ -18,3 +18,7 @@ h6,
 p {
   margin-block: 1ch;
 }
+
+.inspector {
+  display: grid;
+}

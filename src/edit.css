@@ -5,9 +5,6 @@
 body {
   font-family: monospace;
   margin: 0 auto;
-
-  display: grid;
-  grid-template-columns: 1fr 1fr;
 }
 
 html,
@@ -15,6 +12,16 @@ body {
   height: 100%;
 }
 
-code-editor-element {
+.app-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+
+.left-pane {
   height: 100%;
+}
+
+.right-pane {
+  display: grid;
+  align-content: start;
 }

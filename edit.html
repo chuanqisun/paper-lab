@@ -7,8 +7,13 @@
     <title>Vite + TS</title>
   </head>
   <body class="app-layout">
-    <code-editor-element></code-editor-element>
-    <div></div>
+    <code-editor-element class="left-pane" id="source-editor"></code-editor-element>
+    <div class="right-pane inspector">
+      <code-editor-element id="prompt-editor" data-lang="txt"></code-editor-element>
+      <footer>
+        <a href="./index.html">Import</a>
+      </footer>
+    </div>
     <script type="module" src="/src/edit.ts"></script>
   </body>
 </html>

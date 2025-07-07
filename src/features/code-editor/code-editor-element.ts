@@ -6,6 +6,7 @@ import { Compartment, EditorSelection, EditorState, type Extension } from "@code
 import { drawSelection, EditorView, highlightSpecialChars, keymap } from "@codemirror/view";
 import { basicLight } from "cm6-theme-basic-light";
 import { distinctUntilChanged, Subject, tap } from "rxjs";
+import { chatKeymap } from "./chat-keymap";
 import "./code-editor-element.css";
 import { syncDispatch } from "./sync";
 
@@ -30,7 +31,7 @@ export class CodeEditorElement extends HTMLElement {
     drawSelection(),
     syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
     EditorView.lineWrapping,
-    keymap.of([...defaultKeymap, ...historyKeymap, indentWithTab]),
+    keymap.of([...chatKeymap(this), ...defaultKeymap, ...historyKeymap, indentWithTab]),
     dynamicReadonly.of([]),
     dynamicLanguage.of([]),
     basicLight,
