@@ -1,5 +1,5 @@
 import { OpenAI } from "openai/client.js";
-import { finalize, from, tap } from "rxjs";
+import { finalize, from, fromEvent, merge, switchMap, tap } from "rxjs";
 import "./edit.css";
 import { CodeEditorElement } from "./features/code-editor/code-editor-element";
 import { getStoredApiKey } from "./features/markdown-editor";
@@ -10,24 +10,28 @@ const sourceEditor = document.querySelector<CodeEditorElement>("#source-editor")
 const promptEditor = document.querySelector<CodeEditorElement>("#prompt-editor")!;
 const scriptEditor = document.querySelector<CodeEditorElement>("#script-editor")!;
 
-sourceEditor.addEventListener("run", () => console.log("Run prompt editor content:", sourceEditor.value));
-promptEditor.addEventListener("run", async (e) => {
-  const prompt = (e as CustomEvent<string>).detail;
-  const source = sourceEditor.value;
+const sourceEditorRun$ = fromEvent(sourceEditor, "run").pipe(
+  tap(() => console.log("Run prompt editor content:", sourceEditor.value)),
+);
 
-  const openai = new OpenAI({
-    dangerouslyAllowBrowser: true,
-    apiKey: getStoredApiKey(),
-  });
+const promptEditorRun$ = fromEvent(promptEditor, "run").pipe(
+  switchMap(async (e) => {
+    const prompt = (e as CustomEvent<string>).detail;
+    const source = sourceEditor.value;
 
-  const response = await openai.responses.create({
-    stream: true,
-    model: "gpt-4.1-mini",
-    user: "paper-lab-edit",
-    input: [
-      {
-        role: "developer",
-        content: `The user is editing the following document:
+    const openai = new OpenAI({
+      dangerouslyAllowBrowser: true,
+      apiKey: getStoredApiKey(),
+    });
+
+    const response = await openai.responses.create({
+      stream: true,
+      model: "gpt-4.1-mini",
+      user: "paper-lab-edit",
+      input: [
+        {
+          role: "developer",
+          content: `The user is editing the following document:
 \`\`\`
 ${source}
 \`\`\`      
@@ -49,19 +53,21 @@ async function edit(content: string): string {
 }
 </script>
       `.trim(),
-      },
-      {
-        role: "user",
-        content: prompt,
-      },
-    ],
-  });
+        },
+        {
+          role: "user",
+          content: prompt,
+        },
+      ],
+    });
 
-  scriptEditor.value = "";
-  const aiCursor = scriptEditor.spawnCursor();
+    return response;
+  }),
+  switchMap((response) => {
+    scriptEditor.value = "";
+    const aiCursor = scriptEditor.spawnCursor();
 
-  from(response)
-    .pipe(
+    return from(response).pipe(
       tap((chunk) => {
         if (chunk.type === "response.output_text.delta") {
           // Write the delta to the prompt editor
@@ -69,6 +75,10 @@ async function edit(content: string): string {
         }
       }),
       finalize(() => aiCursor.close()),
-    )
-    .subscribe();
-});
+    );
+  }),
+);
+
+const scriptEditorRun$ = fromEvent(scriptEditor, "run").pipe(tap(() => {}));
+
+merge(sourceEditorRun$, promptEditorRun$, scriptEditorRun$).subscribe();
