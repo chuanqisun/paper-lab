@@ -26,6 +26,19 @@ const sourceEditorRun$ = fromEvent(sourceEditor, "run").pipe(
   tap(() => console.log("Run prompt editor content:", sourceEditor.value)),
 );
 
+const savedValue = localStorage.getItem("paper-lab:source-editor-value");
+if (savedValue !== null) {
+  sourceEditor.value = savedValue;
+}
+
+fromEvent<CustomEvent<string>>(sourceEditor, "contentchange")
+  .pipe(
+    tap((e) => {
+      localStorage.setItem("paper-lab:source-editor-value", e.detail);
+    }),
+  )
+  .subscribe();
+
 const promptEditorRun$ = fromEvent(promptEditor, "run").pipe(
   switchMap(async (e) => {
     const prompt = (e as CustomEvent<string>).detail;
@@ -38,7 +51,7 @@ const promptEditorRun$ = fromEvent(promptEditor, "run").pipe(
 
     const response = await openai.responses.create({
       stream: true,
-      model: "gpt-4.1-mini",
+      model: "gpt-4.1",
       user: "paper-lab-edit",
       input: [
         {
@@ -56,15 +69,26 @@ Write a typescript function to perform the edit based on user's goal or instruct
 
 Write compact code without comments. When performing multiple types of edit, delimit the their code by a new line.
 
-Respond with a <script>:
+Respond with typescript. No markup or markdown wrapper.
 
-<script type="text/typescript">
 async function edit(content: string): string {
   /** Your implementation here */
   return updatedContent;
 }
-</script>
       `.trim(),
+        },
+        {
+          role: "user",
+          content: `Just say "hello"`,
+        },
+        {
+          role: "assistant",
+          content: `
+async function edit(content: string): string {
+  return \`
+hello
+\`.trim();
+}`.trim(),
         },
         {
           role: "user",
@@ -93,9 +117,7 @@ async function edit(content: string): string {
 
 const scriptEditorRun$ = fromEvent<CustomEvent<string>>(scriptEditor, "run").pipe(
   switchMap(async (e) => {
-    const code = e.detail;
-    const dom = new DOMParser().parseFromString(code, "text/html");
-    const script = dom.querySelector("script[type='text/typescript']")?.textContent ?? "";
+    const script = e.detail;
     const esbuild = await esbuildAsync;
     const output = await esbuild
       .transform(script, { loader: "ts" })
