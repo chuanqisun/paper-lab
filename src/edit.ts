@@ -1,5 +1,5 @@
 import { OpenAI } from "openai/client.js";
-import { from, tap } from "rxjs";
+import { finalize, from, tap } from "rxjs";
 import "./edit.css";
 import { CodeEditorElement } from "./features/code-editor/code-editor-element";
 import { getStoredApiKey } from "./features/markdown-editor";
@@ -8,6 +8,7 @@ CodeEditorElement.define();
 
 const sourceEditor = document.querySelector<CodeEditorElement>("#source-editor")!;
 const promptEditor = document.querySelector<CodeEditorElement>("#prompt-editor")!;
+const scriptEditor = document.querySelector<CodeEditorElement>("#script-editor")!;
 
 sourceEditor.addEventListener("run", () => console.log("Run prompt editor content:", sourceEditor.value));
 promptEditor.addEventListener("run", async (e) => {
@@ -22,6 +23,7 @@ promptEditor.addEventListener("run", async (e) => {
   const response = await openai.responses.create({
     stream: true,
     model: "gpt-4.1-mini",
+    user: "paper-lab-edit",
     input: [
       {
         role: "developer",
@@ -30,14 +32,22 @@ promptEditor.addEventListener("run", async (e) => {
 ${source}
 \`\`\`      
 
-Based on user's editing goal or instructions, write a javascript function that performs the edit. Respond in the following format:
+Write a typescript function to perform the edit based on user's goal or instruction.
+- You can return string literal directly when write content from script
+- Use string replacement function to make precise edits, pay attention to whitespace
+- Use regex to match complex patterns
+- Use logic for data manipulation
 
-\`\`\`typescript
+Write compact code without comments. When performing multiple types of edit, delimit the their code by a new line.
+
+Respond with a <script>:
+
+<script type="text/typescript">
 async function edit(content: string): string {
   /** Your implementation here */
   return updatedContent;
 }
-\`\`\`
+</script>
       `.trim(),
       },
       {
@@ -47,7 +57,8 @@ async function edit(content: string): string {
     ],
   });
 
-  const aiCursor = sourceEditor.spawnCursor();
+  scriptEditor.value = "";
+  const aiCursor = scriptEditor.spawnCursor();
 
   from(response)
     .pipe(
@@ -57,6 +68,7 @@ async function edit(content: string): string {
           aiCursor.write(chunk.delta);
         }
       }),
+      finalize(() => aiCursor.close()),
     )
     .subscribe();
 });

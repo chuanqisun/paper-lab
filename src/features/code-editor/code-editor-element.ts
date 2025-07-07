@@ -1,4 +1,4 @@
-import { defaultKeymap, history, historyKeymap, indentWithTab } from "@codemirror/commands";
+import { defaultKeymap, history, historyKeymap } from "@codemirror/commands";
 import { markdown } from "@codemirror/lang-markdown";
 import { defaultHighlightStyle, syntaxHighlighting } from "@codemirror/language";
 import { languages } from "@codemirror/language-data";
@@ -31,7 +31,7 @@ export class CodeEditorElement extends HTMLElement {
     drawSelection(),
     syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
     EditorView.lineWrapping,
-    keymap.of([...chatKeymap(this), ...defaultKeymap, ...historyKeymap, indentWithTab]),
+    keymap.of([...chatKeymap(this), ...defaultKeymap, ...historyKeymap]),
     dynamicReadonly.of([]),
     dynamicLanguage.of([]),
     basicLight,
