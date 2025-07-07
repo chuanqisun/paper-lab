@@ -1,5 +1,4 @@
 import { render } from "lit-html";
-
 import { BehaviorSubject, map, scan, Subject, tap } from "rxjs";
 import { CodeEditorElement } from "./features/code-editor/code-editor-element";
 import { activeFileReducer, FileUploader } from "./features/file-uploader";
@@ -7,7 +6,7 @@ import { getStoredApiKey, MarkdownEditor } from "./features/markdown-editor";
 import { debug } from "./lib/debug";
 import { html } from "./lib/html";
 import { reducerPipe } from "./lib/reducer-pipe";
-import "./style.css";
+import "./main.css";
 import type { Intent, State } from "./types";
 
 CodeEditorElement.define();
